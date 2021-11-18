@@ -8,7 +8,9 @@
 
 import UIKit
 
-final class SearchViewController: UIViewController {
+// Это View
+
+final class SearchViewController: UIViewController, SearchViewInput {
     
     // MARK: - Private Properties
     
@@ -16,12 +18,19 @@ final class SearchViewController: UIViewController {
         return self.view as! SearchView
     }
     
-    private let searchService = ITunesSearchService()
-    private var searchResults = [ITunesApp]()
+    var searchResults = [ITunesApp]() {
+        didSet {
+            self.searchView.searchBar.resignFirstResponder()
+            self.searchView.tableView.isHidden = self.searchResults.isEmpty
+            self.searchView.tableView.reloadData()
+        }
+    }
     
     private struct Constants {
         static let reuseIdentifier = "reuseId"
     }
+    
+    var output: SearchViewOutput! // Всегда сильная ссылка
     
     // MARK: - Lifecycle
     
@@ -44,55 +53,27 @@ final class SearchViewController: UIViewController {
         self.throbber(show: false)
     }
     
-    // MARK: - Private
+    // MARK: - SearchViewInput
     
-    private func throbber(show: Bool) {
+    func throbber(show: Bool) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = show
     }
     
-    private func showError(error: Error) {
+    func showError(error: Error) {
         let alert = UIAlertController(title: "Error", message: "\(error.localizedDescription)", preferredStyle: .alert)
         let actionOk = UIAlertAction(title: "OK", style: .cancel, handler: nil)
         alert.addAction(actionOk)
         self.present(alert, animated: true, completion: nil)
     }
     
-    private func showNoResults() {
+    func showNoResults() {
         self.searchView.emptyResultView.isHidden = false
     }
     
-    private func hideNoResults() {
+    func hideNoResults() {
         self.searchView.emptyResultView.isHidden = true
     }
     
-    private func requestApps(with query: String) {
-        self.throbber(show: true)
-        self.searchResults = []
-        self.searchView.tableView.reloadData()
-        
-        self.searchService.getApps(forQuery: query) { [weak self] result in
-            guard let self = self else { return }
-            self.throbber(show: false)
-            result
-                .withValue { apps in
-                    guard !apps.isEmpty else {
-                        self.searchResults = []
-                        self.showNoResults()
-                        return
-                    }
-                    self.hideNoResults()
-                    self.searchResults = apps
-                    
-                    self.searchView.tableView.isHidden = false
-                    self.searchView.tableView.reloadData()
-                    
-                    self.searchView.searchBar.resignFirstResponder()
-                }
-                .withError {
-                    self.showError(error: $0)
-                }
-        }
-    }
 }
 
 //MARK: - UITableViewDataSource
@@ -120,9 +101,7 @@ extension SearchViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let app = searchResults[indexPath.row]
-        let appDetaillViewController = AppDetailViewController()
-        appDetaillViewController.app = app
-        navigationController?.pushViewController(appDetaillViewController, animated: true)
+        self.output.viewDidSelectApp(app)
     }
 }
 
@@ -138,6 +117,7 @@ extension SearchViewController: UISearchBarDelegate {
             searchBar.resignFirstResponder()
             return
         }
-        self.requestApps(with: query)
+        
+        self.output.viewDidSearch(with: query)
     }
 }
