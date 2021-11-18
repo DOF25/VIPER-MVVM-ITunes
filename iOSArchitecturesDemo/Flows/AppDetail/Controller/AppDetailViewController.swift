@@ -10,9 +10,9 @@ import UIKit
 
 final class AppDetailViewController: UIViewController {
     
-    public var app: ITunesApp?
+    public var app: ITunesApp!
     
-    private let imageDownloader = ImageDownloader()
+    private lazy var appDetailHeader = AppDetailHeaderViewController(app: app)
     
     private var appDetailView: AppDetailView {
         return self.view as! AppDetailView
@@ -27,24 +27,38 @@ final class AppDetailViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.configureNavigationController()
-        self.downloadImage()
+        self.setupUI()
     }
     
     // MARK: - Private
+    
+    private func setupUI() {
+        self.setupAppDetailHeaderViewController()
+        self.configureNavigationController()
+        self.addDescription()
+    }
+    
+    private func setupAppDetailHeaderViewController() {
+        self.addChild(self.appDetailHeader)
+        
+        self.view.addSubview(self.appDetailHeader.view)
+        self.appDetailHeader.didMove(toParent: self)
+        
+        self.appDetailHeader.view.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            self.appDetailHeader.view.topAnchor.constraint(equalTo: self.view.topAnchor),
+            self.appDetailHeader.view.leftAnchor.constraint(equalTo: self.view.leftAnchor),
+            self.appDetailHeader.view.rightAnchor.constraint(equalTo: self.view.rightAnchor),
+        ])
+    }
     
     private func configureNavigationController() {
         self.navigationController?.navigationBar.tintColor = UIColor.white;
         self.navigationItem.largeTitleDisplayMode = .never
     }
     
-    private func downloadImage() {
-        guard let url = self.app?.iconUrl else { return }
-        self.appDetailView.throbber.startAnimating()
-        self.imageDownloader.getImage(fromUrl: url) { (image, error) in
-            self.appDetailView.throbber.stopAnimating()
-            guard let image = image else { return }
-            self.appDetailView.imageView.image = image
-        }
+    private func addDescription() {
+        
     }
 }
