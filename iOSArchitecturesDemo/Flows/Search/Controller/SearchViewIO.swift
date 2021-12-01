@@ -26,3 +26,23 @@ protocol SearchViewOutput: AnyObject {
     
     func viewDidSelectApp(_ app: ITunesApp)
 }
+
+protocol MusicSearchViewInput: AnyObject {
+
+    var searchResults: [SongCellModel] { get set }
+
+    func throbber(show: Bool)
+
+    func showError(error: Error)
+
+    func showNoResults()
+
+    func hideNoResults()
+
+    func setModels(_ cellModels: [SongCellModel])
+}
+
+protocol MusicSearchViewOutput: AnyObject {
+
+    func viewDidSearch(with query: String)
+}
